@@ -18,9 +18,10 @@ class RoomType(DjangoObjectType):
 
 
 class MessageType(DjangoObjectType):
+    id = graphene.Int(source='pk')
+
     class Meta:
         model = Message
-        exclude_fields = ['pk', 'id']
 
 
 class CreateRoomMutation(graphene.Mutation):

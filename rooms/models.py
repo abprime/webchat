@@ -22,7 +22,7 @@ class Message(models.Model):
     posted_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ('-id', )
+        ordering = ('id', )
 
     def __str__(self):
         return f"Message (author: {self.author.username}, posted at: {str(self.posted_at)})"

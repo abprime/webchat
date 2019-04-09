@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'graphene_django',
     'rest_framework',
     'channels',
-    'channels_api',
     'users',
     'rooms'
 ]
