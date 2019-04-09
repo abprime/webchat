@@ -48,3 +48,6 @@ class Mutation:
     verify_token = graphql_jwt.Verify.Field()
     refresh_token = graphql_jwt.Refresh.Field()
 
+
+class Subscription:
+    pass

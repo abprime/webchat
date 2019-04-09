@@ -133,12 +133,10 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-
 GRAPHENE = {
     'SCHEMA': 'chat.schema.schema',
     'MIDDLEWARE': [
         'graphql_jwt.middleware.JSONWebTokenMiddleware',
-        'graphene_django_subscriptions.depromise_subscription',
     ],
 }
 
@@ -146,12 +144,15 @@ GRAPHQL_JWT = {
     'JWT_ALLOW_ARGUMENT': True,
 }
 
+CHANNELS_WS_PROTOCOLS = ["graphql-ws", ]
 CHANNEL_LAYERS = {
-  "default": {
-    "BACKEND": "asgiref.inmemory.ChannelLayer",
-    "ROUTING": "chat.routing.project_routing",
-  },
+    "default": {
+        "BACKEND": "asgiref.inmemory.ChannelLayer",
+        "ROUTING": "chat.urls.channel_routing",
+    }
 }
 
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = False
+
+ASGI_APPLICATION = "chat.routing.application"

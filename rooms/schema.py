@@ -4,6 +4,7 @@ import graphql_jwt
 from django.contrib.auth.models import User
 from graphene_django.types import DjangoObjectType
 from graphql_jwt.decorators import login_required, user_passes_test
+from rx import Observable
 
 from rooms.models import Room, Message
 
@@ -127,3 +128,19 @@ class Mutation:
     create_room = CreateRoomMutation.Field()
     enter_room = EnterRoomMutation.Field()
     post_message = PostMessageMutation.Field()
+
+
+class Subscription:
+    new_messages = graphene.List(MessageType,
+                                 token=graphene.String(required=True),
+                                 room_id=graphene.Int())
+
+    @login_required
+    def resolve_new_messages(self, info, token, room_id):
+        try:
+            room = Room.objects.get(pk=room_id)
+
+            return room.messages.all()
+
+        except:
+            return None
