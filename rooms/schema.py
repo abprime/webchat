@@ -1,12 +1,25 @@
 import graphene
 import graphql_jwt
+import logging
+import json
+import time
 
+import redis
+from redis.client import PubSubWorkerThread
 from django.contrib.auth.models import User
 from graphene_django.types import DjangoObjectType
 from graphql_jwt.decorators import login_required, user_passes_test
-from rx import Observable
+from rx import Observable, Observer
+from rx.subjects import Subject
+from graphql_jwt import shortcuts
+from django.conf import settings
 
 from rooms.models import Room, Message
+
+from chat.redis_client import redis_client
+
+
+logger = logging.getLogger(__name__)
 
 
 class RoomType(DjangoObjectType):
@@ -61,6 +74,11 @@ class PostMessageMutation(graphene.Mutation):
             room = Room.objects.get(pk=room_id)
             user = room.members.get(pk=info.context.user.pk)  # testing if user can post messages
             message = Message.objects.create(author=user, content=content, room=room)
+
+            redis_client.publish(f'room-{room_id}', json.dumps({
+                'type': 'NEW_MESSAGE',
+                'pk': message.pk
+            }))
 
             return PostMessageMutation(message=message)
 
@@ -132,16 +150,30 @@ class Mutation:
 
 
 class Subscription:
-    new_messages = graphene.List(MessageType,
+    new_message = graphene.Field(MessageType,
                                  token=graphene.String(required=True),
-                                 room_id=graphene.Int())
+                                 room_id=graphene.Int(required=True))
 
-    @login_required
-    def resolve_new_messages(self, info, token, room_id):
-        try:
-            room = Room.objects.get(pk=room_id)
+    def resolve_new_message(self, info, token, room_id, **kwargs):
+        user = shortcuts.get_user_by_token(token)
+        user_id = user.pk
 
-            return room.messages.all()
+        room = Room.objects.get(pk=room_id)
+        room.members.get(pk=user.pk)
 
-        except:
-            return None
+        source = Subject()
+
+        def handler(event):
+            if event is not None:
+                source.on_next(event)
+
+        pubsub = redis_client.pubsub()
+        pubsub.subscribe(**{f'room-{room_id}': handler})
+
+        pubsub.run_in_thread(sleep_time=0.001)
+
+        return source.filter(lambda event: isinstance(event['data'], bytes))\
+                     .map(lambda event: json.loads(event['data'].decode()))\
+                     .filter(lambda event: event['type'] == 'NEW_MESSAGE')\
+                     .map(lambda event: Message.objects.get(pk=event['pk']))\
+                     .filter(lambda message: message.room.pk == room_id)

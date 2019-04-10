@@ -146,7 +146,10 @@ GRAPHQL_JWT = {
 CHANNELS_WS_PROTOCOLS = ["graphql-ws", ]
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "asgiref.inmemory.ChannelLayer",
+        "BACKEND": "asgi_redis.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
         "ROUTING": "chat.urls.channel_routing",
     }
 }
@@ -155,3 +158,6 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = False
 
 ASGI_APPLICATION = "chat.routing.application"
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+REDIS_DB = 0
